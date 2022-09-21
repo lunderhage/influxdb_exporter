@@ -49,6 +49,7 @@ var (
 	sampleExpiry        = kingpin.Flag("influxdb.sample-expiry", "How long a sample is valid for.").Default("5m").Duration()
 	bindAddress         = kingpin.Flag("udp.bind-address", "Address on which to listen for udp packets.").Default(":9122").String()
 	exportTimestamp     = kingpin.Flag("timestamps", "Export timestamps of points.").Default("false").Bool()
+	enableUintSupport   = kingpin.Flag("uint", "Enable support for unsigned integers.").Default("false").Bool()
 	lastPush            = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "influxdb_last_push_timestamp_seconds",
@@ -317,7 +318,7 @@ func ReplaceInvalidChars(in *string) {
 	}
 }
 
-//JSONErrorResponse write error in json fromat and set response code
+// JSONErrorResponse write error in json fromat and set response code
 func JSONErrorResponse(w http.ResponseWriter, err string, code int) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
@@ -341,6 +342,10 @@ func main() {
 	logger := promlog.New(promlogConfig)
 	level.Info(logger).Log("msg", "Starting influxdb_exporter", "version", version.Info())
 	level.Info(logger).Log("msg", "Build context", "context", version.BuildContext())
+
+	if *enableUintSupport {
+		models.EnableUintSupport()
+	}
 
 	c := newInfluxDBCollector(logger)
 	influxDbRegistry.MustRegister(c)
