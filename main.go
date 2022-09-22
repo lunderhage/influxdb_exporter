@@ -90,6 +90,7 @@ func (c *influxDBCollector) serveUdp() {
 	buf := make([]byte, MAX_UDP_PAYLOAD)
 	for {
 		n, _, err := c.conn.ReadFromUDP(buf)
+		level.Debug(c.logger).Log("msg", fmt.Sprintf("Got UDP packet. len=%d", n))
 		if err != nil {
 			level.Warn(c.logger).Log("msg", "Failed to read UDP message", "err", err)
 			continue
@@ -177,6 +178,7 @@ func (c *influxDBCollector) influxDBPost(w http.ResponseWriter, r *http.Request)
 }
 
 func (c *influxDBCollector) parsePointsToSample(points []models.Point) {
+	level.Debug(c.logger).Log("msg", fmt.Sprintf("Parsing %d point(s)", len(points)))
 	for _, s := range points {
 		fields, err := s.Fields()
 		if err != nil {
@@ -186,6 +188,8 @@ func (c *influxDBCollector) parsePointsToSample(points []models.Point) {
 		for field, v := range fields {
 			var value float64
 			switch v := v.(type) {
+			case uint64:
+				value = float64(v)
 			case float64:
 				value = v
 			case int64:
@@ -206,6 +210,7 @@ func (c *influxDBCollector) parsePointsToSample(points []models.Point) {
 			} else {
 				name = string(s.Name()) + "_" + field
 			}
+			level.Info(c.logger).Log("msg", "Parsed ", name, "=", value)
 
 			ReplaceInvalidChars(&name)
 			sample := &influxDBSample{
