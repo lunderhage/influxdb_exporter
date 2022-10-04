@@ -43,13 +43,13 @@ const (
 )
 
 var (
-	listenAddress       = kingpin.Flag("web.listen-address", "Address on which to expose metrics and web interface.").Default(":9122").String()
-	metricsPath         = kingpin.Flag("web.telemetry-path", "Path under which to expose Prometheus metrics.").Default("/metrics").String()
-	exporterMetricsPath = kingpin.Flag("web.exporter-telemetry-path", "Path under which to expose exporter metrics.").Default("/metrics/exporter").String()
-	sampleExpiry        = kingpin.Flag("influxdb.sample-expiry", "How long a sample is valid for.").Default("5m").Duration()
-	bindAddress         = kingpin.Flag("udp.bind-address", "Address on which to listen for udp packets.").Default(":9122").String()
-	exportTimestamp     = kingpin.Flag("timestamps", "Export timestamps of points.").Default("false").Bool()
-	enableUintSupport   = kingpin.Flag("uint", "Enable support for unsigned integers.").Default("false").Bool()
+	listenAddress       = kingpin.Flag("web.listen-address", "Address on which to expose metrics and web interface.").Envar("WEB_LISTEN_ADDRESS").Default(":9122").String()
+	metricsPath         = kingpin.Flag("web.telemetry-path", "Path under which to expose Prometheus metrics.").Envar("WEB_TELEMETRY_PATH").Default("/metrics").String()
+	exporterMetricsPath = kingpin.Flag("web.exporter-telemetry-path", "Path under which to expose exporter metrics.").Envar("WEB_EXPORTER_TELEMETRY_PATH").Default("/metrics/exporter").String()
+	sampleExpiry        = kingpin.Flag("influxdb.sample-expiry", "How long a sample is valid for.").Envar("INFLUXDB_SAMPLE_EXPIRY").Default("5m").Duration()
+	bindAddress         = kingpin.Flag("udp.bind-address", "Address on which to listen for udp packets.").Envar("UDP_BIND_ADDRESS").Default(":9122").String()
+	exportTimestamp     = kingpin.Flag("timestamps", "Export timestamps of points.").Envar("TIMESTAMPS").Default("false").Bool()
+	enableUintSupport   = kingpin.Flag("uint", "Enable support for unsigned integers.").Envar("UINT").Default("false").Bool()
 	lastPush            = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "influxdb_last_push_timestamp_seconds",
@@ -351,6 +351,8 @@ func main() {
 	if *enableUintSupport {
 		models.EnableUintSupport()
 	}
+
+	level.Info(logger).Log("sampleExpiry = ", sampleExpiry)
 
 	c := newInfluxDBCollector(logger)
 	influxDbRegistry.MustRegister(c)
